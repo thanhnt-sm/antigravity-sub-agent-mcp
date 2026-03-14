@@ -1,0 +1,49 @@
+{
+  "name": "antigravity-sub-agent-mcp",
+  "version": "1.0.0",
+  "description": "MCP server that spawns Antigravity sub-agents for delegated tasks",
+  "type": "module",
+  "main": "index.js",
+  "bin": {
+    "antigravity-sub-agent-mcp": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "PORT=17123 node index.js",
+    "check": "node --check index.js && node --check lib/cascade-client.js && node --check lib/completion-loop.js && node --check lib/ls-detector.js && node --check lib/auto-accept.js && node --check lib/protobuf.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai-agents",
+    "sub-agent",
+    "antigravity",
+    "llm",
+    "automation",
+    "cascade"
+  ],
+  "author": "Khanh Nguyen",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/khanhnguyen/antigravity-sub-agent-mcp.git"
+  },
+  "homepage": "https://github.com/khanhnguyen/antigravity-sub-agent-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/khanhnguyen/antigravity-sub-agent-mcp/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "index.js",
+    "lib/",
+    "LICENSE",
+    "README.md"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "protobufjs": "^8.0.0",
+    "zod": "^3.24.4"
+  }
+}
