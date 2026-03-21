@@ -41,7 +41,7 @@ npm start
 
 ## Reporting Issues
 
-- Use [GitHub Issues](https://github.com/khanhnguyen/antigravity-sub-agent-mcp/issues)
+- Use [GitHub Issues](https://github.com/thanhnt-sm/antigravity-sub-agent-mcp/issues)
 - Include: Node.js version, OS, steps to reproduce, expected vs actual behavior
 - Include relevant stderr logs if applicable
 

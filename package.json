@@ -22,15 +22,15 @@
     "automation",
     "cascade"
   ],
-  "author": "Khanh Nguyen",
+  "author": "thanhnt-sm",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/khanhnguyen/antigravity-sub-agent-mcp.git"
+    "url": "git+https://github.com/thanhnt-sm/antigravity-sub-agent-mcp.git"
   },
-  "homepage": "https://github.com/khanhnguyen/antigravity-sub-agent-mcp#readme",
+  "homepage": "https://github.com/thanhnt-sm/antigravity-sub-agent-mcp#readme",
   "bugs": {
-    "url": "https://github.com/khanhnguyen/antigravity-sub-agent-mcp/issues"
+    "url": "https://github.com/thanhnt-sm/antigravity-sub-agent-mcp/issues"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -188,7 +188,7 @@ This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.
 
 ## Acknowledgments
 
-This project was built on top of and heavily inspired by [**Antigravity Deck**](https://github.com/tysonnbt/Antigravity-Deck) — the original toolkit for automating Antigravity IDE workflows.
+This project was built on top of and heavily inspired by [**Antigravity Deck**](https://github.com/thanhnt-sm/Antigravity-Deck) — the original toolkit for automating Antigravity IDE workflows.
 
 Key components ported and simplified from Antigravity Deck:
 
