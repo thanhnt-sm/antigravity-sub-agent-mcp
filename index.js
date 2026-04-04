@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-nocheck — T24: Pending jsDoc migration (see types/index.d.ts)
 
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 Khanh Nguyen

@@ -10,7 +10,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "PORT=17123 node index.js",
-    "check": "node --check index.js && node --check lib/cascade-client.js && node --check lib/completion-loop.js && node --check lib/ls-detector.js && node --check lib/auto-accept.js && node --check lib/protobuf.js"
+    "check": "node --check index.js && node --check lib/cascade-client.js && node --check lib/completion-loop.js && node --check lib/ls-detector.js && node --check lib/auto-accept.js && node --check lib/protobuf.js",
+    "type-check": "tsc --noEmit"
   },
   "keywords": [
     "mcp",
@@ -45,5 +46,9 @@
     "@modelcontextprotocol/sdk": "^1.12.1",
     "protobufjs": "^8.0.0",
     "zod": "^3.24.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.17",
+    "typescript": "^5.9.3"
   }
 }
