@@ -15,6 +15,7 @@ import { z } from 'zod';
 import { configure, isConfigured, startCascade, sendMessage } from './lib/cascade-client.js';
 import { smartWait } from './lib/completion-loop.js';
 import { autoDetect } from './lib/ls-detector.js';
+import { AsyncQueue } from './lib/async-queue.js';
 
 const log = (msg) => process.stderr.write(`[antigravity-sub-agent-mcp] ${msg}\n`);
 
@@ -109,6 +110,7 @@ function createServer() {
     //   get_agent_results([A, B]) → waits for both, returns together
 
     const taskRegistry = new Map(); // taskId → { cascadeId, promise, result, status, taskName }
+    const dispatchQueue = new AsyncQueue(1, 60000, 50); // N=1, 60s timeout, max 50
 
     // Tool: submit_agent (non-blocking — returns taskId immediately)
     server.tool(
@@ -148,24 +150,53 @@ Models: gemini-high (default), gemini-low, gemini-flash, claude-opus, claude-son
         async ({ taskName, task, model, timeout = 600, maxReplies = 3, workspace }) => {
             await ensureConfigured(workspace);
 
-            const cascadeId = await startCascade();
-            const shortId = cascadeId.substring(0, 8);
+            const shortId = Math.random().toString(36).substring(2, 10);
             const modelId = resolveModel(model);
-            log(`[submit:${shortId}] model=${modelId} task=${taskName || task.substring(0, 50)}`);
-
             const modelLabel = model || 'gemini-high';
             const prompt = (taskName ? `# ${taskName}\n` : '') + `[Model: ${modelLabel}]\n\n` + SYSTEM_PROMPT + task;
-            await sendMessage(cascadeId, prompt, modelId);
 
-            // Start waiting in background (not awaited here!)
-            const promise = smartWait(cascadeId, {
-                timeoutMs: timeout * 1000,
-                maxReplies,
-                onProgress: (info) => {
-                    const entry = taskRegistry.get(shortId);
-                    if (entry) entry.status = `${info.status || 'polling'} steps=${info.stepCount}`;
-                    log(`[submit:${shortId}] ${info.status || 'polling'} steps=${info.stepCount} elapsed=${Math.round(info.elapsed / 1000)}s`);
-                },
+            // Immediately register the task in queue state
+            taskRegistry.set(shortId, {
+                cascadeId: null,
+                promise: null,
+                result: null,
+                status: 'queued',
+                taskName: taskName || task.substring(0, 60),
+                model: modelLabel,
+                startedAt: Date.now(),
+            });
+
+            // Dispatch cascade lifecycle asynchronously via bounded queue
+            const backgroundPromise = dispatchQueue.enqueue(async () => {
+                const entry = taskRegistry.get(shortId);
+                if (entry) entry.status = 'initializing';
+                log(`[async-queue] Dequeued task ${shortId}, creating cascade...`);
+
+                const cascadeId = await startCascade();
+                if (entry) {
+                    entry.cascadeId = cascadeId;
+                    entry.status = 'running';
+                }
+                log(`[submit:${shortId}] cascadeId=${cascadeId.substring(0, 8)} model=${modelId} task=${taskName || task.substring(0, 50)}`);
+                await sendMessage(cascadeId, prompt, modelId);
+
+                // Now wait for steps (smartWait returns a Promise, we await it here so the queue lock is released ONLY after it's fully done?
+                // NO! If we await smartWait inside queue.enqueue, this agent blocks the queue for 10 minutes!
+                // We MUST return immediately AFTER cascade is sent so the next agent can be queued!)
+                return cascadeId;
+            }, shortId).then((cascadeId) => {
+                // The queue lock is released here! The agent is independently running in IDE.
+                // We now enter non-blocking polling locally.
+                log(`[submit:${shortId}] Lock released. Starting background smartWait...`);
+                return smartWait(cascadeId, {
+                    timeoutMs: timeout * 1000,
+                    maxReplies,
+                    onProgress: (info) => {
+                        const entry = taskRegistry.get(shortId);
+                        if (entry) entry.status = `${info.status || 'polling'} steps=${info.stepCount}`;
+                        log(`[submit:${shortId}] ${info.status || 'polling'} steps=${info.stepCount} elapsed=${Math.round(info.elapsed / 1000)}s`);
+                    },
+                });
             }).then((result) => {
                 const entry = taskRegistry.get(shortId);
                 if (entry) {
@@ -184,20 +215,14 @@ Models: gemini-high (default), gemini-low, gemini-flash, claude-opus, claude-son
                 return { ok: false, text: err.message, stepCount: 0 };
             });
 
-            taskRegistry.set(shortId, {
-                cascadeId,
-                promise,
-                result: null,
-                status: 'running',
-                taskName: taskName || task.substring(0, 60),
-                model: model || 'gemini-high',
-                startedAt: Date.now(),
-            });
+            // Store the ultimate chain promise for get_agent_results
+            const entryForUpdate = taskRegistry.get(shortId);
+            if (entryForUpdate) entryForUpdate.promise = backgroundPromise;
 
             return {
                 content: [{
                     type: 'text',
-                    text: `Task submitted.\n\n**taskId**: \`${shortId}\`\n**taskName**: ${taskName || '(unnamed)'}\n**model**: ${model || 'gemini-high'}\n\nUse \`get_agent_results\` with this taskId to retrieve the result when ready.`,
+                    text: `Task submitted.\n\n**taskId**: \`${shortId}\`\n**status**: queued\n**taskName**: ${taskName || '(unnamed)'}\n**model**: ${modelLabel}\n\nUse \`get_agent_results\` with this taskId to retrieve the result when ready.`,
                 }],
             };
         }
